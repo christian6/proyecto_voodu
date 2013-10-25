@@ -1,0 +1,410 @@
+# -*- coding: cp1252 -*-
+
+#!/usr/bin/env python
+
+# example images.py
+
+
+import pygtk
+pygtk.require('2.0')
+import gtk
+import psycopg2
+import base64
+import time
+import autopy
+import pyHook
+import pythoncom
+import zlib
+import threading
+
+
+DSN = "dbname=prueba1 user=abacouser password=abacouser host=192.168.1.22 port=5500"
+palabra = ""
+
+pics = []
+clicks = 0
+posxy = 0
+window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+
+threads = list()
+
+widthemisor = 0
+heigthemisor = 0
+    
+def OnKeyboardEvent(event):
+    #Actualiza el campo letra con la letra que queramos escribir
+    global palabra
+    caracter = chr(event.Ascii)
+    palabra = palabra + caracter
+    print palabra
+    if caracter == "-":
+       con = psycopg2.connect(DSN)
+       cur = con.cursor()
+       query_letra = "update sesion set letra = '"+ palabra +"' where id = 1;"
+       cur.execute(query_letra)
+       con.commit()
+       query_puedeescribir = "update sesion set puedeescribir = 1 where id = 1;"
+       cur.execute(query_puedeescribir)
+       con.commit()
+       cur.close()
+       print palabra
+       palabra = ""
+    return True
+
+
+def onclick_derecho(event):
+    #Actualiza a 1 leftclick
+    con = psycopg2.connect(DSN)
+    cur = con.cursor()
+    query_posy = "update sesion set rightclick = 1 where id = 1;"
+    cur.execute(query_posy)
+    con.commit()
+    cur.close()
+    print "click derecho: "+ str(event.Position)
+    return True
+
+def onclick_izquierdo(event):
+    #print event.Position
+    #Actualiza a 1 rightclick
+    con = psycopg2.connect(DSN)
+    cur = con.cursor()
+    query_posy = "update sesion set leftclick = 1 where id = 1;"
+    cur.execute(query_posy)
+    con.commit()
+    cur.close()
+    print "Click izquierdo: "+ str(event.Position)
+    return True
+
+def on_destroy (widget):
+    gtk.main_quit()
+    return False
+
+def posiciones():
+    a = 0
+    widthemisor = 0
+    heigthemisor = 0
+
+    con = psycopg2.connect(DSN)
+    cur = con.cursor()
+    query = "select widthemisor, heigthemisor from sesion where id = 1;"
+    cur.execute(query)
+    con.commit()
+
+    for medidas in cur.fetchall():
+        widthemisor = medidas[0]
+        heigthemisor = medidas[1]
+        
+    while a == 0:
+        origenxy = window.get_position()
+        print "Origen: "+ str(origenxy)
+        
+        lugar = autopy.mouse.get_pos()
+        print "Lugar de mouse: "+ str(lugar)
+
+        #posx = (lugar[0] - origenxy[0]) * 2
+        posx = (lugar[0] - origenxy[0])
+        if posx < 0:
+            posx = 0
+        elif posx > widthemisor:
+            posx = widthemisor - 10
+
+        #posy = ((lugar[1] - origenxy[1]) * 2) - 36
+        posy = ((lugar[1] - origenxy[1])) - 28
+        if posy < 0:
+            posy = 0
+        elif posy > heigthemisor:
+            posy = heigthemisor - 2
+             
+         
+         
+        #Actualiza la posX
+        con = psycopg2.connect(DSN)
+        cur = con.cursor()
+        query_posx = "update sesion set posicionx = "+ str(posx) +" where id = 1;"
+        print "posicion X: "+query_posx
+        cur.execute(query_posx)
+        con.commit()
+        cur.close()
+        #Actualiza la posY
+        con = psycopg2.connect(DSN)
+        cur = con.cursor()
+        query_posy = "update sesion set posiciony = "+ str(posy) +" where id = 1;"
+        print "posicion Y: "+query_posy
+        cur.execute(query_posy)
+        con.commit()
+        cur.close()
+
+
+def cargar_imagen():
+    a = 0
+    while a == 0:
+        con = psycopg2.connect(DSN)
+        cur = con.cursor()
+        query = "select imagen from sesion where id = 1;"
+        cur.execute(query)
+        con.commit()
+         
+         
+        for imagen in cur.fetchall():
+            g = open("imagenn.jpg", "wb")
+            #print imagen[0]
+            #descomprimido = zlib.decompress(base64.b64decode(imagen[0]))
+            jpgtxt = imagen[0]
+            print len(jpgtxt)
+            
+            
+            #num = num + 1
+            
+            g_txt = open("imagenn.txt", "w")
+            g_txt.write(jpgtxt) #b64decode
+            g_txt.close()
+            
+            
+            jpgtxt = jpgtxt.replace('L', 'AAA')
+            jpgtxt = jpgtxt.replace('M', 'BBB')
+            jpgtxt = jpgtxt.replace('N', 'CCC')
+            jpgtxt = jpgtxt.replace('O', 'EEE')
+            jpgtxt = jpgtxt.replace('P', 'FFF')
+            jpgtxt = jpgtxt.replace('Q', 'AA')
+            jpgtxt = jpgtxt.replace('H', 'BB')
+            jpgtxt = jpgtxt.replace('I', 'CC')
+            jpgtxt = jpgtxt.replace('J', 'DD')
+            jpgtxt = jpgtxt.replace('K', 'EE')
+            jpgtxt = jpgtxt.replace('T', '00')
+            jpgtxt = jpgtxt.replace('U', '33')
+            jpgtxt = jpgtxt.replace('V', '44')
+            jpgtxt = jpgtxt.replace('W', '55')
+            jpgtxt = jpgtxt.replace('X', '66')
+            jpgtxt = jpgtxt.replace('Y', '77')
+            jpgtxt = jpgtxt.replace('Z', '88')
+            jpgtxt = jpgtxt.replace('G', '99')
+            jpgtxt = jpgtxt.replace('+', 'AB')
+            jpgtxt = jpgtxt.replace('$', 'BC')
+            jpgtxt = jpgtxt.replace('%', 'CD')
+            jpgtxt = jpgtxt.replace('#', 'DE')
+            jpgtxt = jpgtxt.replace('*', 'EF')
+            jpgtxt = jpgtxt.replace('<', 'DA')
+            jpgtxt = jpgtxt.replace('>', 'ED')
+            jpgtxt = jpgtxt.replace('?', 'EC')
+            jpgtxt = jpgtxt.replace('¿', 'BA')
+            jpgtxt = jpgtxt.replace('=', 'CB')
+            jpgtxt = jpgtxt.replace('-', 'DC')
+            jpgtxt = jpgtxt.replace('!', 'FE')
+            jpgtxt = jpgtxt.replace('@', 'AD')
+            jpgtxt = jpgtxt.replace('(', 'FA')
+            jpgtxt = jpgtxt.replace(')', 'AF')
+            jpgtxt = jpgtxt.replace('|', 'FB')
+            jpgtxt = jpgtxt.replace('[', 'BF')
+            jpgtxt = jpgtxt.replace(']', '01')
+            jpgtxt = jpgtxt.replace('{', '02')
+            jpgtxt = jpgtxt.replace('}', '03')
+            jpgtxt = jpgtxt.replace('.', '04')
+            jpgtxt = jpgtxt.replace('a', '05')
+            jpgtxt = jpgtxt.replace('b', '06')
+            jpgtxt = jpgtxt.replace('c', '07')
+            jpgtxt = jpgtxt.replace('d', '08')
+            jpgtxt = jpgtxt.replace('e', '09')
+            jpgtxt = jpgtxt.replace('f', '000')
+            jpgtxt = jpgtxt.replace('g', '111')
+            jpgtxt = jpgtxt.replace('h', '222')
+            jpgtxt = jpgtxt.replace('i', '333')
+            jpgtxt = jpgtxt.replace('j', '444')
+            jpgtxt = jpgtxt.replace('k', '555')
+            jpgtxt = jpgtxt.replace('l', '666')
+            jpgtxt = jpgtxt.replace('m', '777')
+            jpgtxt = jpgtxt.replace('n', '888')
+            jpgtxt = jpgtxt.replace('o', '999')
+            jpgtxt = jpgtxt.replace('p', 'FF')
+            jpgtxt = jpgtxt.replace('q', 'EB')
+            jpgtxt = jpgtxt.replace('r', 'DB')
+            jpgtxt = jpgtxt.replace('s', 'BE')
+            jpgtxt = jpgtxt.replace('t', 'FD')
+            jpgtxt = jpgtxt.replace('u', 'FC')
+            jpgtxt = jpgtxt.replace('v', 'BD')
+            jpgtxt = jpgtxt.replace('w', 'DF')
+            jpgtxt = jpgtxt.replace('x', 'CF')
+            jpgtxt = jpgtxt.replace('y', 'CA')
+            jpgtxt = jpgtxt.replace('z', 'CE')
+            jpgtxt = jpgtxt.replace('ç', 'AE')
+            jpgtxt = jpgtxt.replace('ª', '11')
+            jpgtxt = jpgtxt.replace('º', '12')
+            jpgtxt = jpgtxt.replace('&', '13')
+            jpgtxt = jpgtxt.replace('/', '14')
+            jpgtxt = jpgtxt.replace('¡', '15')
+            jpgtxt = jpgtxt.replace('¨', '16')
+            jpgtxt = jpgtxt.replace('¬', '17')
+            jpgtxt = jpgtxt.replace(':', '18')
+            jpgtxt = jpgtxt.replace(',', '19')
+            jpgtxt = jpgtxt.replace('_', '20')
+            jpgtxt = jpgtxt.replace('~', '21')
+            jpgtxt = jpgtxt.replace('"', '22')
+            jpgtxt = jpgtxt.replace('´', '23')
+            jpgtxt = jpgtxt.replace('^', '24')
+            jpgtxt = jpgtxt.replace('·', '25')
+            
+            
+            
+             
+            #descomprimido = zlib.decompress(base64.b16decode(imagen[0]))
+            descomprimido = zlib.decompress(base64.b16decode(jpgtxt))
+            g.write(base64.decodestring(descomprimido)) #b64decode
+            g.close()
+            
+            time.sleep(0.15)
+                 
+        cur.close()
+
+def cambia (widget, image):
+
+
+    hm = pyHook.HookManager()
+    #******* deteccion del click derecho ************
+    hm.SubscribeMouseRightDown(onclick_derecho)
+    
+    #************** fin deteccion *******************
+    #******* deteccion del click izquierdo ************
+    hm.SubscribeMouseLeftDown(onclick_izquierdo)
+    
+    #************** fin deteccion *******************
+    
+    #******** deteccion de presionar tecla en teclado ****
+    hm.KeyDown = OnKeyboardEvent
+    #******************* fin *****************************
+    
+    t = threading.Thread(target=cargar_imagen)
+    threads.append(t)
+    t.start()
+    
+    t_posiciones = threading.Thread(target=posiciones)
+    threads.append(t_posiciones)
+    t_posiciones.start()
+    
+    
+    while True:
+         #image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file("imagenn.jpg"))
+         #image.queue_draw()
+         #gtk.main_iteration_do(True)
+         #en la siguiente linea, se obtienen las coordenadas del puntero
+         #en una tupla y en las dos siguientes se obtienen los valores
+         #individuales
+         #**************** detectar la posicion de origen de la ventana ****
+         #origenxy = window.get_position()
+         #print origenxy
+         #break
+         # la variable posxy es una tupla que tiene como info la coordenada X
+         # y la coordenada Y en ese orden. 
+         #****************  fin de deteccion de origen de ventana  *********
+         #image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file("imagenn.jpg"))
+         #image.queue_draw()
+         #gtk.main_iteration_do(True)
+         #******* deteccion del click derecho ************
+         #hm.SubscribeMouseRightDown(onclick)
+         hm.HookMouse()
+         
+         hm.HookKeyboard()
+         #la siguiente linea, aunque checkea por acciones del mouse y de teclado
+         #deja que el while siga corriendo
+         pythoncom.PumpWaitingMessages()
+         #hm.UnhookMouse()
+         #************** fin deteccion *******************
+
+         #image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file("imagenn.jpg"))
+         #image.queue_draw()
+         #gtk.main_iteration_do(True)
+         
+         #lugar = autopy.mouse.get_pos()
+         #print lugar
+
+         #posx = (lugar[0] - origenxy[0]) * 2
+         #posx = (lugar[0] - origenxy[0])
+         #if posx < 0:
+         #    posx = 0
+         #elif posx > widthemisor:
+         #    posx = widthemisor - 10
+
+         #posy = ((lugar[1] - origenxy[1]) * 2) - 36
+         #posy = ((lugar[1] - origenxy[1])) - 28
+         #if posy < 0:
+         #    posy = 0
+         #elif posy > heigthemisor:
+         #    posy = heigthemisor - 2
+             
+         
+         #image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file("imagenn.jpg"))
+         #image.queue_draw()
+         #gtk.main_iteration_do(True)
+         
+         #Actualiza la posX
+         #con = psycopg2.connect(DSN)
+         #cur = con.cursor()
+         #query_posx = "update sesion set posicionx = "+ str(posx) +" where id = 1;"
+         #cur.execute(query_posx)
+         #con.commit()
+         #cur.close()
+         #Actualiza la posY
+         #con = psycopg2.connect(DSN)
+         #cur = con.cursor()
+         #query_posy = "update sesion set posiciony = "+ str(posy) +" where id = 1;"
+         #cur.execute(query_posy)
+         #con.commit()
+         #cur.close()
+         
+         try:
+             image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file("imagenn.jpg"))
+         except:
+             print "Oops!"
+         
+         image.queue_draw()
+         gtk.main_iteration_do(True)
+         
+         
+         #time.sleep(0.5)
+
+
+def on_button_clicked (widget, image):
+    #con = psycopg2.connect(DSN)
+    #cur = con.cursor()
+    #query = "select imagen from sesion where id = 1;"
+    #cur.execute(query)
+    #for imagen in cur.fetchall():
+    #    g = open("imagenn.jpg", "wb")
+    #    print imagen[0]
+    #    g.write(base64.decodestring(imagen[0])) #b64decode
+    #    g.close()
+       
+    #    cur.close()
+    #image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file("imagenn.jpg"))
+        
+    #image.show()
+    
+    #image.set_from_pixbuf(gtk.gdk.pixbuf_new_from_file("imagenn.jpg"))
+    #time.sleep(1.05)
+    #on_button_clicked(widget, image)
+    cambia(widget, image)
+
+
+def create ():
+    #window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+    window.connect("destroy", on_destroy)
+
+    pics.append (gtk.gdk.pixbuf_new_from_file("imagenn1.jpg"))
+    pics.append (gtk.gdk.pixbuf_new_from_file("imagenn1.jpg"))
+
+    image = gtk.Image()
+    image.set_from_pixbuf(pics[0])
+
+    button = gtk.Button ("Recibir Imagen")
+    button.connect("clicked", on_button_clicked, image)
+
+    vbox = gtk.VBox()
+    vbox.pack_start (image)
+    vbox.pack_start (button)
+
+    window.add(vbox)
+    window.show_all()
+    
+
+if __name__ == "__main__":
+    create()
+    gtk.main()
+
